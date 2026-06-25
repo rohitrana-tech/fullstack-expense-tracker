@@ -301,7 +301,7 @@
         let transactions = [];
         async function fetchTransactions() {
     try {
-        const res = await fetch('http://localhost:5000/api/transactions');
+        const res = await fetch('https://expense-tracker-backend-kzlb.onrender.com/api/transactions');
         const data = await res.json();
         // Format the database data so your UI understands it
         transactions = data.map(t => ({
@@ -416,7 +416,7 @@
 
     try {
         // Send data to the backend
-        await fetch('http://localhost:5000/api/transactions', {
+        await fetch('https://expense-tracker-backend-kzlb.onrender.com/api/transactions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(newTx)
@@ -430,7 +430,7 @@
 
         window.delT = async (id) => { 
     try {
-        await fetch(`http://localhost:5000/api/transactions/${id}`, { method: 'DELETE' });
+        await fetch(`https://expense-tracker-backend-kzlb.onrender.com/api/transactions/${id}`, { method: 'DELETE' });
         fetchTransactions(); // Refresh the list after deleting
     } catch (err) {
         console.error("Error deleting transaction:", err);
