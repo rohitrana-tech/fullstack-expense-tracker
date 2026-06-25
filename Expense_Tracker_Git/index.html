@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Personal Ledger | Professional Local Suite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap');
+        
+        :root {
+            --classic-navy: #1a365d;
+            --classic-gold: #c5a059;
+            --classic-cream: #fdfbf7;
+            --classic-ink: #000000; /* Pure black text for legibility */
+            --bg-color: #f4f1ea;
+            --card-bg: #fdfbf7;
+            --border-color: #000000;
+        }
+
+        .dark {
+            --classic-navy: #90cdf4;
+            --classic-gold: #edb95e;
+            --classic-cream: #1e293b;
+            --classic-ink: #ffffff;
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --border-color: #475569;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--classic-ink);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        h1, h2, h3, h4 { font-family: 'Playfair Display', serif; color: #000000 !important; }
+        .dark h1, .dark h2, .dark h3, .dark h4 { color: #ffffff !important; }
+
+        .classic-card {
+            background: var(--card-bg);
+            border: 1px solid #000000;
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.1);
+        }
+        .dark .classic-card { border: 1px solid var(--border-color); }
+
+        .nav-link {
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #000000 !important;
+            font-weight: 700;
+        }
+        .dark .nav-link { color: #ffffff !important; }
+        .nav-link.active { color: var(--classic-gold) !important; }
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--classic-gold);
+        }
+
+        .progress-bar {
+            height: 14px;
+            background: #e2e8f0;
+            overflow: hidden;
+            border: 1px solid #000000;
+        }
+        .progress-fill {
+            height: 100%;
+            transition: width 0.8s ease;
+        }
+
+        /* Enforce black text on all inputs and utility classes */
+        input, select, textarea, span, p, div, td, th {
+            color: inherit;
+        }
+        
+        .text-slate-500, .text-slate-600, .text-slate-700 { color: #000000 !important; font-weight: 600; }
+        .dark .text-slate-500, .dark .text-slate-600, .dark .text-slate-700 { color: #cbd5e1 !important; }
+
+        .loading-shimmer {
+            background: linear-gradient(90deg, transparent, rgba(0,0,0,0.05), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-color); }
+        ::-webkit-scrollbar-thumb { background: #000000; border: 1px solid white; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <div class="max-w-7xl mx-auto px-4 py-6 md:py-8">
+        <!-- HEADER -->
+        <header class="mb-8 border-b-2 border-black dark:border-[#90cdf4] pb-6 flex flex-col lg:flex-row justify-between items-center gap-6">
+            <div class="text-center lg:text-left">
+                <h1 class="text-4xl font-bold italic" data-i18n="app-title">The Personal Ledger</h1>
+                <p class="text-black font-bold font-serif italic text-sm uppercase tracking-widest mt-1 dark:text-[#c5a059]" data-i18n="app-subtitle">Private & Local Financial Suite</p>
+            </div>
+            
+            <nav class="flex flex-wrap justify-center gap-4 md:gap-8 text-[11px] md:text-xs uppercase tracking-widest">
+                <span onclick="navigateTo('ledger')" id="nav-ledger" class="nav-link active" data-i18n="nav-ledger">Ledger</span>
+                <span onclick="navigateTo('analytics')" id="nav-analytics" class="nav-link" data-i18n="nav-audit">Daily Audit</span>
+                <span onclick="navigateTo('budget')" id="nav-budget" class="nav-link" data-i18n="nav-budgeting">Budgeting</span>
+                <span onclick="navigateTo('stats')" id="nav-stats" class="nav-link" data-i18n="nav-reports">Reports</span>
+                <span onclick="navigateTo('ai')" id="nav-ai" class="nav-link text-blue-900 dark:text-blue-400 font-extrabold underline" data-i18n="nav-ai">AI Advisor</span>
+            </nav>
+
+            <div class="flex items-center gap-4">
+                <select id="lang-selector" class="text-[10px] border border-black bg-white px-2 py-1 focus:outline-none cursor-pointer font-bold uppercase tracking-tighter">
+                    <option value="en">English</option>
+                    <option value="hi">हिंदी (Hindi)</option>
+                    <option value="bn">বাংলা (Bengali)</option>
+                    <option value="mr">मराठी (Marathi)</option>
+                    <option value="te">తెలుగు (Telugu)</option>
+                    <option value="ta">தமிழ் (Tamil)</option>
+                    <option value="gu">ગુજરાતી (Gujarati)</option>
+                    <option value="kn">ಕನ್ನಡ (Kannada)</option>
+                    <option value="ml">മലയാളം (Malayalam)</option>
+                    <option value="pa">ਪੰਜਾਬੀ (Punjabi)</option>
+                </select>
+                <button id="theme-toggle" class="p-2 rounded-full border border-black hover:bg-black hover:text-white transition-all">
+                    <svg id="moon-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 118.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                    <svg id="sun-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- PAGE: LEDGER -->
+        <main id="page-ledger" class="page-content">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10 text-center">
+                <div class="classic-card p-6 border-t-4 border-black dark:border-[#90cdf4]">
+                    <p class="text-xs font-bold text-black uppercase tracking-widest mb-1 dark:text-slate-300" data-i18n="stat-balance">Current Balance</p>
+                    <h2 id="total-balance" class="text-2xl font-black text-black dark:text-white">₹0.00</h2>
+                </div>
+                <div class="classic-card p-6 border-t-4 border-emerald-600">
+                    <p class="text-xs font-bold text-black uppercase tracking-widest mb-1 dark:text-slate-300" data-i18n="stat-credits">Credits</p>
+                    <h2 id="total-income" class="text-2xl font-black text-emerald-800 dark:text-emerald-500">₹0.00</h2>
+                </div>
+                <div class="classic-card p-6 border-t-4 border-rose-600">
+                    <p class="text-xs font-bold text-black uppercase tracking-widest mb-1 dark:text-slate-300" data-i18n="stat-debits">Debits</p>
+                    <h2 id="total-expense" class="text-2xl font-black text-rose-800 dark:text-rose-500">₹0.00</h2>
+                </div>
+                <div class="classic-card p-6 border-t-4 border-[#c5a059] bg-[#fcfaf2] dark:bg-slate-800/50">
+                    <p class="text-[10px] font-bold text-black uppercase tracking-widest mb-1 dark:text-slate-300" data-i18n="market-power">Purchasing Power (Live)</p>
+                    <div class="flex flex-col gap-1 items-center font-bold text-black dark:text-white">
+                        <div class="flex items-center gap-2 font-black"><span class="text-sm">🌕</span><span id="gold-value">...</span></div>
+                        <div class="flex items-center gap-2 font-black"><span class="text-sm">₿</span><span id="btc-value">...</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div class="lg:col-span-4">
+                    <div class="classic-card p-8 sticky top-6">
+                        <h3 class="text-xl font-bold mb-6 border-b border-black pb-2 text-black" data-i18n="form-title">Record Transaction</h3>
+                        <form id="transaction-form" class="space-y-4">
+                            <input type="text" id="desc" data-i18n-placeholder="placeholder-desc" required class="w-full px-4 py-3 border border-black focus:outline-none bg-white font-bold">
+                            <input type="number" id="amount" step="0.01" data-i18n-placeholder="placeholder-amount" required class="w-full px-4 py-3 border border-black focus:outline-none bg-white font-bold">
+                            <select id="type" class="w-full px-4 py-3 focus:outline-none border border-black bg-white font-bold">
+                                <option value="expense" data-i18n="type-expense">Debit</option>
+                                <option value="income" data-i18n="type-income">Credit</option>
+                            </select>
+                            <select id="category" class="w-full px-4 py-3 focus:outline-none border border-black bg-white font-bold"></select>
+                            <button type="submit" class="w-full bg-black text-white font-bold py-4 uppercase tracking-widest text-sm hover:bg-gray-800 transition-all shadow-md dark:bg-[#2c5282]" data-i18n="btn-record">Record Entry</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="lg:col-span-8">
+                    <div class="classic-card shadow-sm overflow-hidden">
+                        <div class="bg-black p-4 flex justify-between items-center text-white dark:bg-[#2c5282]">
+                            <h3 class="text-lg font-bold uppercase tracking-tight text-white" data-i18n="journal-title">Journal</h3>
+                            <div class="flex gap-2">
+                                <input type="text" id="search-ledger" data-i18n-placeholder="placeholder-search" class="text-xs px-2 py-1 bg-white border-none text-black placeholder-gray-500 focus:outline-none rounded font-bold">
+                                <button id="clear-all-btn" class="text-[10px] font-bold border border-white px-2 py-1 text-white uppercase hover:bg-white hover:text-black transition-all rounded" data-i18n="btn-clear">Wipe All</button>
+                            </div>
+                        </div>
+                        <div class="max-h-[500px] overflow-y-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-gray-200 dark:bg-slate-800 text-xs font-bold uppercase text-black dark:text-slate-300 sticky top-0 border-b border-black">
+                                    <tr><th class="p-4" data-i18n="th-date">Date</th><th class="p-4" data-i18n="th-desc">Description</th><th class="p-4 text-right" data-i18n="th-amount">Amount</th><th class="p-4 text-center">Action</th></tr>
+                                </thead>
+                                <tbody id="transaction-list" class="text-black font-bold"></tbody>
+                            </table>
+                            <div id="empty-msg" class="text-center py-20 text-black font-black italic hidden" data-i18n="msg-empty">No entries found.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- PAGE: DAILY AUDIT -->
+        <main id="page-analytics" class="page-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-1">
+                    <div class="classic-card p-6">
+                        <h3 class="text-xl font-bold mb-4 text-black" data-i18n="audit-title">Daily Audit</h3>
+                        <input type="date" id="audit-date" class="w-full px-4 py-2 border border-black bg-white mb-6 font-black text-black">
+                        <div id="audit-summary" class="space-y-4"></div>
+                    </div>
+                </div>
+                <div class="lg:col-span-2">
+                    <div class="classic-card overflow-hidden">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-gray-200 text-xs font-bold uppercase text-black border-b border-black">
+                                <tr><th class="p-4" data-i18n="audit-account">Account</th><th class="p-4" data-i18n="audit-cat">Category</th><th class="p-4 text-right" data-i18n="audit-amt">Amount</th></tr>
+                            </thead>
+                            <tbody id="audit-list" class="text-black font-bold"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- PAGE: BUDGETING -->
+        <main id="page-budget" class="page-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="classic-card p-8">
+                    <h3 class="text-2xl font-bold mb-6 text-black" data-i18n="budget-header">Allocate Budget</h3>
+                    <div id="budget-inputs" class="space-y-6"></div>
+                </div>
+                <div class="classic-card p-8">
+                    <h3 class="text-xl font-bold mb-6 text-black" data-i18n="budget-util">Utilization</h3>
+                    <div id="budget-progress-container" class="space-y-8 font-black text-black"></div>
+                </div>
+            </div>
+        </main>
+
+        <!-- PAGE: REPORTS -->
+        <main id="page-stats" class="page-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="classic-card p-8"><h3 class="text-xl font-bold mb-6 text-black" data-i18n="stats-dist">Distribution</h3><div class="h-[350px]"><canvas id="categoryChart"></canvas></div></div>
+                <div class="classic-card p-8">
+                    <h3 class="text-xl font-bold mb-6 text-black" data-i18n="stats-health">Fiscal Health</h3>
+                    <div id="health-metrics" class="space-y-4 font-black uppercase text-xs text-black dark:text-white"></div>
+                </div>
+            </div>
+        </main>
+
+        <!-- PAGE: AI -->
+        <main id="page-ai" class="page-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-1">
+                    <div class="classic-card p-8 border-l-8 border-black">
+                        <h3 class="text-2xl font-bold mb-4 text-black" data-i18n="ai-header">AI Advisor</h3>
+                        <button id="get-ai-advice" class="w-full bg-black text-white font-bold py-4 uppercase text-sm shadow-lg hover:bg-gray-800" data-i18n="ai-btn">Get Expert Tips</button>
+                    </div>
+                </div>
+                <div id="ai-response-container" class="lg:col-span-2 classic-card p-8 min-h-[400px]">
+                    <div id="ai-loading" class="hidden text-center py-20"><div class="loading-shimmer h-8 w-64 mx-auto rounded"></div><p class="mt-4 italic animate-pulse font-black text-black" data-i18n="ai-loading">Reviewing habits...</p></div>
+                    <div id="ai-result" class="hidden font-serif italic text-black dark:text-slate-200 leading-relaxed space-y-4 font-black text-lg"></div>
+                    <div id="ai-placeholder" class="text-center py-20 opacity-40"><div class="text-6xl mb-4 text-black">📜</div><p class="text-black font-black" data-i18n="ai-placeholder-text">Click for expert suggestions.</p></div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="mt-12 text-center text-[10px] text-black font-black italic uppercase dark:text-slate-500" data-i18n="footer">Confidential Local Financial Record</footer>
+    </div>
+
+    <script>
+        const apiKey = "";
+        const translations = {
+            en: {
+                "app-title": "The Personal Ledger", "app-subtitle": "Private & Local Financial Suite",
+                "nav-ledger": "Ledger", "nav-audit": "Daily Audit", "nav-budgeting": "Budgeting", "nav-reports": "Reports", "nav-ai": "AI Advisor",
+                "stat-balance": "Current Balance", "stat-credits": "Monthly Credits", "stat-debits": "Monthly Debits", "market-power": "Purchasing Power (Live)",
+                "form-title": "Record Transaction", "placeholder-desc": "Account Description", "placeholder-amount": "Amount (INR)", "placeholder-search": "Search Journal...",
+                "type-expense": "Debit (Expense)", "type-income": "Credit (Income)", "btn-record": "Strike the Record", "btn-clear": "Wipe All",
+                "journal-title": "Transaction Journal", "th-date": "Date", "th-desc": "Description", "th-amount": "Amount", "th-action": "Action", "msg-empty": "No entries found in the journal.",
+                "audit-title": "Daily Audit", "audit-account": "Account", "audit-cat": "Category", "audit-amt": "Amount", "audit-daybal": "Day Balance",
+                "budget-header": "Allocate Budget", "budget-sub": "Set monthly limits for categories.", "budget-util": "Budget Utilization",
+                "stats-dist": "Spending Distribution", "stats-health": "Fiscal Health Summary", "stats-save": "Savings Rate", "stats-burn": "Daily Burn Rate",
+                "ai-header": "Advisor's Tips", "ai-sub": "Saving tips based on your data.", "ai-btn": "Get Expert Tips", "ai-loading": "Reviewing habits...", "ai-placeholder-text": "Click for expert financial suggestions.",
+                "footer": "Confidential Local Financial Record",
+                "categories": { Salary: "💰 Salary", Food: "🍔 Provisions", Transport: "🚗 Transport", Shopping: "🛍️ Commodities", Bills: "📑 Utilities", Other: "✨ Sundries" }
+            },
+            hi: {
+                "app-title": "व्यक्तिगत बहीखाता", "app-subtitle": "निजी और स्थानीय वित्तीय सुइट",
+                "nav-ledger": "बहीखाता", "nav-audit": "ऑडिट", "nav-budgeting": "बजट", "nav-reports": "रिपोर्ट", "nav-ai": "AI सलाहकार",
+                "stat-balance": "कुल शेष", "stat-credits": "जमा (क्रेडिट)", "stat-debits": "खर्च (डेबिट)", "market-power": "लाइव वैल्यू",
+                "form-title": "लेनदेन दर्ज करें", "placeholder-desc": "विवरण", "placeholder-amount": "राशि", "placeholder-search": "खोजें...",
+                "type-expense": "डेबिट", "type-income": "क्रेडिट", "btn-record": "रिकॉर्ड करें", "btn-clear": "साफ करें", "journal-title": "लेनदेन जर्नल",
+                "audit-title": "दैनिक ऑडिट", "audit-account": "खाता", "audit-cat": "श्रेणी", "audit-amt": "राशि", "audit-daybal": "दैनिक शेष",
+                "budget-header": "बजट सीमा", "budget-sub": "श्रेणियों के लिए सीमा निर्धारित करें।", "budget-util": "बजट उपयोग",
+                "stats-dist": "खर्च वितरण", "stats-health": "वित्तीय स्वास्थ्य", "stats-save": "बचत दर", "stats-burn": "दैनिक खर्च",
+                "ai-header": "सलाहकार की युक्तियाँ", "ai-btn": "युक्तियाँ प्राप्त करें", "ai-loading": "समीक्षा हो रही है...",
+                "categories": { Salary: "💰 वेतन", Food: "🍔 भोजन", Transport: "🚗 परिवहन", Shopping: "🛍️ खरीदारी", Bills: "📑 बिल", Other: "✨ अन्य" }
+            }
+            // Other languages like Bengali, Marathi, etc. follow the same structure...
+        };
+
+        let currentLang = localStorage.getItem('ledger_lang') || 'en';
+        let transactions = [];
+        async function fetchTransactions() {
+    try {
+        const res = await fetch('http://localhost:5000/api/transactions');
+        const data = await res.json();
+        // Format the database data so your UI understands it
+        transactions = data.map(t => ({
+            id: t.id,
+            desc: t.description,
+            amount: parseFloat(t.amount),
+            type: t.type,
+            category: t.category,
+            dateDisplay: new Date(t.transaction_date).toLocaleDateString('en-GB', {day:'2-digit', month:'short'}),
+            dateISO: new Date(t.transaction_date).toISOString().split('T')[0]
+        }));
+        renderLedger();
+        updateTotals();
+    } catch (err) {
+        console.error("Database connection failed:", err);
+    }
+}
+
+        let budgets = JSON.parse(localStorage.getItem('ledger_budgets_v4')) || { Food: 5000, Shopping: 3000, Transport: 2000, Bills: 5000, Other: 2000 };
+        let market = { gold: 7250, btc: 5840000 };
+        let chartInstance = null;
+
+        async function fetchMarketRates() {
+            try {
+                const btcRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=inr');
+                const btcData = await btcRes.json();
+                if (btcData?.bitcoin?.inr) market.btc = btcData.bitcoin.inr;
+                const goldRes = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+                const goldData = await goldRes.json();
+                market.gold = (2400 * goldData.rates.INR) / 31.1035;
+                updateTotals();
+            } catch(e) { console.warn("Live rates offline."); }
+        }
+
+        function updateLanguage() {
+            const t = translations[currentLang] || translations.en;
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                el.innerText = t[key] || translations.en[key] || el.innerText;
+            });
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                el.placeholder = t[key] || translations.en[key] || el.placeholder;
+            });
+            
+            const catSelect = document.getElementById('category');
+            if (catSelect) {
+                catSelect.innerHTML = '';
+                const cats = t.categories || translations.en.categories;
+                Object.entries(cats).forEach(([v, l]) => {
+                    const o = document.createElement('option'); o.value = v; o.innerText = l; catSelect.appendChild(o);
+                });
+            }
+
+            renderLedger();
+            renderAudit();
+            renderBudgets();
+            renderStats();
+        }
+
+        function navigateTo(page) {
+            document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            document.getElementById(`page-${page}`).classList.remove('hidden');
+            document.getElementById(`nav-${page}`).classList.add('active');
+            updateLanguage(); 
+        }
+
+        function renderLedger() {
+            const list = document.getElementById('transaction-list');
+            const search = document.getElementById('search-ledger')?.value.toLowerCase() || "";
+            if (!list) return;
+            list.innerHTML = '';
+            const t = translations[currentLang] || translations.en;
+            const cats = t.categories || translations.en.categories;
+            const filtered = transactions.filter(tr => tr.desc.toLowerCase().includes(search));
+            document.getElementById('empty-msg').classList.toggle('hidden', filtered.length > 0);
+            filtered.sort((a,b) => b.id - a.id).forEach(tr => {
+                const row = document.createElement('tr');
+                row.className = "border-b border-black dark:border-slate-800 hover:bg-white dark:hover:bg-slate-800/50";
+                row.innerHTML = `<td class="p-4 text-xs italic font-black text-black dark:text-slate-400">${tr.dateDisplay}</td><td class="p-4 font-black text-sm text-black dark:text-slate-100">${tr.desc}<br><span class="text-[9px] text-[#c5a059] uppercase font-bold tracking-tighter">${cats[tr.category] || tr.category}</span></td><td class="p-4 text-right font-black ${tr.type === 'income' ? 'text-emerald-700' : 'text-rose-700'}">₹${parseFloat(tr.amount).toFixed(2)}</td><td class="p-4 text-center"><button onclick="delT(${tr.id})" class="text-black font-black hover:text-rose-600 text-xl">×</button></td>`;
+                list.appendChild(row);
+            });
+            updateTotals();
+        }
+
+        function updateTotals() {
+            const inc = transactions.filter(t => t.type === 'income').reduce((s, t) => s + parseFloat(t.amount), 0);
+            const exp = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + parseFloat(t.amount), 0);
+            const total = inc - exp;
+            const balEl = document.getElementById('total-balance');
+            if (balEl) {
+                balEl.innerText = `₹${total.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+                balEl.className = `text-2xl font-black ${total >= 0 ? 'text-black dark:text-[#90cdf4]' : 'text-rose-700'}`;
+            }
+            if (document.getElementById('total-income')) document.getElementById('total-income').innerText = `₹${inc.toLocaleString()}`;
+            if (document.getElementById('total-expense')) document.getElementById('total-expense').innerText = `₹${exp.toLocaleString()}`;
+            if (document.getElementById('gold-value')) document.getElementById('gold-value').innerText = `${(total/market.gold).toFixed(2)}g Gold`;
+            if (document.getElementById('btc-value')) document.getElementById('btc-value').innerText = `${(total/market.btc).toFixed(6)} BTC`;
+            localStorage.setItem('ledger_data_v4', JSON.stringify(transactions));
+        }
+
+        document.getElementById('transaction-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const newTx = {
+        description: document.getElementById('desc').value,
+        amount: document.getElementById('amount').value,
+        type: document.getElementById('type').value,
+        category: document.getElementById('category').value,
+        date: new Date().toISOString().split('T')[0]
+    };
+
+    try {
+        // Send data to the backend
+        await fetch('http://localhost:5000/api/transactions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newTx)
+        });
+        document.getElementById('transaction-form').reset();
+        fetchTransactions(); // Refresh the list from the database
+    } catch (err) {
+        console.error("Error saving transaction:", err);
+    }
+};
+
+        window.delT = async (id) => { 
+    try {
+        await fetch(`http://localhost:5000/api/transactions/${id}`, { method: 'DELETE' });
+        fetchTransactions(); // Refresh the list after deleting
+    } catch (err) {
+        console.error("Error deleting transaction:", err);
+    }
+};
+        document.getElementById('search-ledger').oninput = renderLedger;
+
+        function renderAudit() {
+            const picker = document.getElementById('audit-date');
+            if (!picker || !picker.value) return;
+            const date = picker.value;
+            const records = transactions.filter(t => t.dateISO === date);
+            const list = document.getElementById('audit-list');
+            const summary = document.getElementById('audit-summary');
+            const t = translations[currentLang] || translations.en;
+            const cats = t.categories || translations.en.categories;
+            if (!list || !summary) return;
+            list.innerHTML = '';
+            const inc = records.filter(t => t.type === 'income').reduce((s, t) => s + parseFloat(t.amount), 0);
+            const exp = records.filter(t => t.type === 'expense').reduce((s, t) => s + parseFloat(t.amount), 0);
+            summary.innerHTML = `<div class="p-4 bg-white dark:bg-slate-800 border-l-4 border-black shadow-sm border border-black"><p class="text-[10px] uppercase font-bold text-black">${t['audit-daybal']}</p><h4 class="text-xl font-black text-black dark:text-white">₹${(inc-exp).toFixed(2)}</h4></div><div class="p-4 bg-white dark:bg-slate-800 border-l-4 border-emerald-600 shadow-sm border border-black"><p class="text-[10px] uppercase font-bold text-black">${t['stat-credits']}</p><h4 class="text-xl font-black text-emerald-800 dark:text-white">₹${inc.toFixed(2)}</h4></div><div class="p-4 bg-white dark:bg-slate-800 border-l-4 border-rose-600 shadow-sm border border-black"><p class="text-[10px] uppercase font-bold text-black">${t['stat-debits']}</p><h4 class="text-xl font-bold text-rose-800 dark:text-white">₹${exp.toFixed(2)}</h4></div>`;
+            records.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-black text-black";
+                tr.innerHTML = `<td class="p-4 font-black text-sm">${r.desc}</td><td class="p-4 text-xs italic font-black opacity-80">${cats[r.category] || r.category}</td><td class="p-4 text-right font-black">₹${r.amount}</td>`;
+                list.appendChild(tr);
+            });
+        }
+        document.getElementById('audit-date').onchange = renderAudit;
+
+        function renderBudgets() {
+            const iC = document.getElementById('budget-inputs');
+            const pC = document.getElementById('budget-progress-container');
+            if (!iC || !pC) return;
+            iC.innerHTML = ''; pC.innerHTML = '';
+            const t = translations[currentLang] || translations.en;
+            const catsDict = t.categories || translations.en.categories;
+            Object.keys(translations.en.categories).filter(c => c !== 'Salary').forEach(cat => {
+                const bVal = budgets[cat] || 0;
+                const spent = transactions.filter(t => t.category === cat && t.type === 'expense').reduce((s,t) => s + parseFloat(t.amount), 0);
+                const perc = bVal > 0 ? Math.min((spent/bVal)*100, 100) : 0;
+                iC.innerHTML += `<div class="space-y-2"><div class="flex justify-between text-xs font-black uppercase mb-2 text-black dark:text-slate-300"><span>${catsDict[cat]}</span><span class="font-black">₹${bVal}</span></div><input type="range" min="0" max="50000" step="100" value="${bVal}" oninput="updBud('${cat}', this.value)" class="w-full accent-black"></div>`;
+                pC.innerHTML += `<div class="mb-6"><div class="flex justify-between text-[10px] uppercase font-black mb-2 text-black dark:text-slate-400"><span>${catsDict[cat]}</span><span>₹${Math.round(spent)} / ₹${bVal}</span></div><div class="progress-bar"><div class="progress-fill ${perc > 90 ? 'bg-rose-600' : perc > 70 ? 'bg-amber-500' : 'bg-black'}" style="width: ${perc}%"></div></div></div>`;
+            });
+        }
+        window.updBud = (cat, val) => { budgets[cat] = parseInt(val); localStorage.setItem('ledger_budgets_v4', JSON.stringify(budgets)); renderBudgets(); };
+
+        function renderStats() {
+            const ctxE = document.getElementById('categoryChart');
+            if (!ctxE) return;
+            const t = translations[currentLang] || translations.en;
+            const cats = t.categories || translations.en.categories;
+            const map = {};
+            Object.keys(translations.en.categories).forEach(c => map[c] = 0);
+            transactions.filter(tr => tr.type === 'expense').forEach(tr => map[tr.category] += parseFloat(tr.amount));
+            if (chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctxE.getContext('2d'), { type: 'doughnut', data: { labels: Object.keys(map).filter(k => map[k] > 0).map(k => cats[k]), datasets: [{ data: Object.values(map).filter(v => v > 0), backgroundColor: ['#000000', '#c5a059', '#2f855a', '#9b2c2c', '#4a5568', '#718096'], borderWidth: 1, borderColor: '#000' }] }, options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#000000', font: { weight: 'bold', size: 11 } } } } } });
+            const inc = transactions.filter(t => t.type === 'income').reduce((s, t) => s + parseFloat(t.amount), 0);
+            const exp = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + parseFloat(t.amount), 0);
+            const saveRate = inc > 0 ? ((inc - exp) / inc * 100).toFixed(1) : 0;
+            const health = document.getElementById('health-metrics');
+            if (health) health.innerHTML = `<div class="flex justify-between border-b border-black pb-2 text-black"><span>${t['stats-save']}</span><span class="font-black text-black">${saveRate}%</span></div><div class="flex justify-between border-b border-black pb-2 text-black"><span>${t['stats-burn']}</span><span class="font-black text-black">₹${(exp/30).toFixed(2)} / day</span></div>`;
+        }
+
+        async function fetchAI(retryCount = 0) {
+            const load = document.getElementById('ai-loading');
+            const resBox = document.getElementById('ai-result');
+            const placeholder = document.getElementById('ai-placeholder');
+            if (!load || !resBox) return;
+            load.classList.remove('hidden'); resBox.classList.add('hidden'); placeholder.classList.add('hidden');
+            const data = transactions.slice(-30).map(t => `${t.type}: ${t.desc} (${t.category}) - ₹${t.amount}`).join('\n');
+            const prompt = `Review my ledger. Provide 3 specific saving tips in ${currentLang} based on this data:\n${data}. Use Tone of helpful 1920s banker.`;
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], systemInstruction: { parts: [{ text: "Senior banker providing saving hacks." }] } }) });
+                if (!response.ok) throw new Error();
+                const json = await response.json();
+                load.classList.add('hidden'); resBox.classList.remove('hidden');
+                resBox.innerHTML = json.candidates[0].content.parts[0].text.replace(/\n/g, '<br>');
+            } catch(e) {
+                if (retryCount < 5) setTimeout(() => fetchAI(retryCount + 1), Math.pow(2, retryCount) * 1000);
+                else { load.classList.add('hidden'); resBox.classList.remove('hidden'); resBox.innerHTML = "Advisor offline."; }
+            }
+        }
+
+        document.getElementById('get-ai-advice').onclick = fetchAI;
+        document.getElementById('lang-selector').onchange = (e) => { currentLang = e.target.value; localStorage.setItem('ledger_lang', currentLang); updateLanguage(); };
+        document.getElementById('theme-toggle').onclick = () => { const d = document.documentElement.classList.toggle('dark'); localStorage.setItem('ledger_theme', d ? 'dark' : 'light'); document.getElementById('sun-icon').classList.toggle('hidden', !d); document.getElementById('moon-icon').classList.toggle('hidden', d); renderStats(); };
+        
+        // FIXED WIPE ALL LOGIC
+        document.getElementById('clear-all-btn').onclick = () => { 
+            if(confirm("Confirm Journal Wipe? This will erase all local records permanently.")) { 
+                transactions = []; 
+                localStorage.setItem('ledger_data_v4', '[]'); 
+                updateTotals();
+                renderLedger();
+                renderAudit();
+                renderBudgets();
+                renderStats();
+            }
+        };
+
+        (function init() {
+            if (localStorage.getItem('ledger_theme') === 'dark') { document.documentElement.classList.add('dark'); document.getElementById('sun-icon').classList.remove('hidden'); document.getElementById('moon-icon').classList.add('hidden'); }
+            document.getElementById('lang-selector').value = currentLang;
+            document.getElementById('audit-date').value = new Date().toISOString().split('T')[0];
+            updateLanguage(); fetchMarketRates();
+            fetchTransactions();
+        })();
+    </script>
+</body>
+</html>
