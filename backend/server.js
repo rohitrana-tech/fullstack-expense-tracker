@@ -52,6 +52,28 @@ app.delete('/api/transactions/:id', async (req, res) => {
     }
 });
 
+// PUT Route: Update an existing transaction (Add this now)
+app.put('/api/transactions/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { description, amount, type, category } = req.body;
+        
+        const updatedTransaction = await pool.query(
+            'UPDATE transactions SET description = $1, amount = $2, type = $3, category = $4 WHERE id = $5 RETURNING *',
+            [description, amount, type, category, id]
+        );
+
+        if (updatedTransaction.rows.length === 0) {
+            return res.status(404).json({ message: "Transaction not found" });
+        }
+
+        res.json(updatedTransaction.rows[0]);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
