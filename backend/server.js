@@ -1,3 +1,4 @@
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
@@ -75,6 +76,53 @@ app.put('/api/transactions/:id', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
+
+// POST Route: Real AI Financial Analysis
+app.post('/api/analyze', async (req, res) => {
+    try {
+        const { transactions, balance, income, expenses } = req.body;
+
+        // Initialize Gemini
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        // Format the transactions so the AI can read them easily
+        const ledgerSummary = transactions.map(t => 
+            `${t.date}: ${t.type} of ₹${t.amount} for ${t.category} (${t.description})`
+        ).join('\n');
+
+        // The System Prompt telling the AI how to behave
+        const prompt = `
+            You are an expert, strict, and highly analytical personal finance advisor.
+            Analyze this user's current financial snapshot:
+            - Total Income: ₹${income}
+            - Total Expenses: ₹${expenses}
+            - Current Balance: ₹${balance}
+            
+            Recent Ledger:
+            ${ledgerSummary}
+            
+            Based on this specific data, provide exactly 3 highly actionable, distinct pieces of advice. 
+            Do not use generic fluff. Point out specific spending habits, category concentrations, or cash flow risks you see in the ledger.
+            Return your answer STRICTLY as a JSON array of 3 strings. Do not include markdown formatting or backticks.
+            Example format: ["Advice 1", "Advice 2", "Advice 3"]
+        `;
+
+        const result = await model.generateContent(prompt);
+        const aiResponse = result.response.text();
+        
+        // Clean the response to ensure it parses as JSON safely
+        const cleanJson = aiResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+        const insightsArray = JSON.parse(cleanJson);
+
+        res.json({ insights: insightsArray });
+
+    } catch (err) {
+        console.error("AI Generation Error:", err);
+        res.status(500).json({ error: "Failed to generate AI insights" });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
